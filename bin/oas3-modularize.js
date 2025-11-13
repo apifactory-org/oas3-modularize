@@ -196,7 +196,7 @@ async function validateWithRedocly(filePath) {
     process.exit(1);
   }
 
-  const command = `${redoclyPath} lint ${filePath}`;
+  const command = `"${redoclyPath}" lint "${filePath}"`;
 
   try {
     const { stdout } = await execPromise(command, {
@@ -376,7 +376,8 @@ async function bundleWithRedocly(inputPath, outputPath) {
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
-  const command = `${redoclyPath} bundle ${inputPath} --dereferenced --remove-unused-components -o ${outputPath}`;
+  const command = `"${redoclyPath}" bundle "${inputPath}" --dereferenced --remove-unused-components -o "${outputPath}"`;
+
   try {
     const { stdout } = await execPromise(command, {
       cwd: process.cwd(),
@@ -423,7 +424,8 @@ async function generateMarkdownDocs(inputPath, outputPath) {
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
-  const command = `${widdershinsPath} ${inputPath} -o ${outputPath}`;
+  const command = `"${widdershinsPath}" "${inputPath}" -o "${outputPath}"`;
+
   try {
     const { stdout } = await execPromise(command, {
       cwd: process.cwd(),
