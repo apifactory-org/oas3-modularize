@@ -1,54 +1,68 @@
-// ./infrastructure/configLoader.js
+// bin/infrastructure/configLoader.js
 
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 
-// ARCHIVOS DE CONFIGURACIÓN OFICIALES DEL CLI
-// Cada comando usa SOLO su config; no se mezclan.
+/**
+ * Tabla de archivos que el CLI reconoce como configuraciones.
+ * Ninguno es obligatorio en este nivel.
+ *
+ * Cada feature valida que SU configuración exista.
+ */
 const CONFIG_FILES = {
   modularize: "config/modularize.yaml",
   bundle: "config/bundle.yaml",
   normalize: "config/normalize.yaml",
   linter: "config/linter.yaml",
-  logging: "config/logging.yaml"
+  logging: "config/logging.yaml",
 };
 
 /**
- * Carga un archivo YAML desde una ruta relativa al proyecto.
- * Si no existe, retorna null sin generar fallo.
+ * Carga un archivo YAML si existe.
+ * 
+ * Nunca lanza error aquí.
+ * Si el archivo no existe → retorna null.
  */
 function loadYamlConfig(relativePath) {
   const filePath = path.resolve(process.cwd(), relativePath);
 
   if (!fs.existsSync(filePath)) {
-    return null;
+    return null; // El application-layer decidirá si esto es un error.
   }
 
   const raw = fs.readFileSync(filePath, "utf8");
-  return yaml.load(raw);
+
+  try {
+    return yaml.load(raw);
+  } catch (err) {
+    throw new Error(`❌ Error parseando YAML en ${relativePath}: ${err.message}`);
+  }
 }
 
 /**
- * Carga TODAS las configuraciones disponibles.
- *
- * Los comandos deciden qué config usar:
- *   - modularize.js  → usa config.modularize
- *   - bundle.js      → usa config.bundle
- *   - validate.js    → depende del caso
- *   - docs.js        → usa config.modularize.paths.docsOutput
+ * Carga TODOS los archivos YAML mapeados en CONFIG_FILES.
+ * 
+ * Retorna un objeto como:
+ * {
+ *   modularize: {...} || null,
+ *   bundle: {...} || null,
+ *   normalize: {...} || null,
+ *   linter: {...} || null,
+ *   logging: {...} || null,
+ * }
  */
 function loadAllConfigs() {
-  return {
-    modularize: loadYamlConfig(CONFIG_FILES.modularize) || null,
-    bundle: loadYamlConfig(CONFIG_FILES.bundle) || null,
-    normalize: loadYamlConfig(CONFIG_FILES.normalize) || null,
-    linter: loadYamlConfig(CONFIG_FILES.linter) || null,
-    logging: loadYamlConfig(CONFIG_FILES.logging) || null
-  };
+  const configs = {};
+
+  for (const [key, file] of Object.entries(CONFIG_FILES)) {
+    configs[key] = loadYamlConfig(file);
+  }
+
+  return configs;
 }
 
 module.exports = {
   loadAllConfigs,
-  loadYamlConfig
+  loadYamlConfig,
 };

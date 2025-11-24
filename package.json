@@ -1,6 +1,6 @@
 {
   "name": "@apifactory/oas3-modularize",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CLI para modularizar contratos OpenAPI 3, validarlos con Redocly, generar bundle y documentación Markdown.",
   "main": "bin/oas3-modularize.js",
   "bin": {
