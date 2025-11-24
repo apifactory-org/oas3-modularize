@@ -16,7 +16,7 @@
 paths:
   # Ruta del archivo OpenAPI principal MONOLÍTICO a modularizar.
   # Es el contrato "grande", normalmente en /api.
-  input: "./api/business-ach-operation-information.yaml"
+  input: "./api/tu-archivo-oas3.yaml"
 
   # Carpeta donde se generará la estructura modular:
   #   - <modularizedOutput>/openapi.yaml

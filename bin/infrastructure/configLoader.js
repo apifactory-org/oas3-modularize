@@ -4,12 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 
-/**
- * Tabla de archivos que el CLI reconoce como configuraciones.
- * Ninguno es obligatorio en este nivel.
- *
- * Cada feature valida que SU configuración exista.
- */
+// Archivos de config soportados
 const CONFIG_FILES = {
   modularize: "config/modularize.yaml",
   bundle: "config/bundle.yaml",
@@ -19,47 +14,64 @@ const CONFIG_FILES = {
 };
 
 /**
- * Carga un archivo YAML si existe.
- * 
- * Nunca lanza error aquí.
- * Si el archivo no existe → retorna null.
+ * Resuelve la ruta real de un archivo de configuración.
+ *
+ * 1) Primero busca en el proyecto del usuario (process.cwd()):
+ *    ./config/xxx.yaml
+ *
+ * 2) Si no existe, busca dentro del propio paquete CLI:
+ *    <node_modules>/@apifactory/oas3-modularize/config/xxx.yaml
+ *
+ * 3) Si tampoco existe, devuelve null.
  */
-function loadYamlConfig(relativePath) {
-  const filePath = path.resolve(process.cwd(), relativePath);
-
-  if (!fs.existsSync(filePath)) {
-    return null; // El application-layer decidirá si esto es un error.
+function resolveConfigPath(relativePath) {
+  // 1) Proyecto del usuario
+  const fromCwd = path.resolve(process.cwd(), relativePath);
+  if (fs.existsSync(fromCwd)) {
+    return fromCwd;
   }
 
-  const raw = fs.readFileSync(filePath, "utf8");
-
-  try {
-    return yaml.load(raw);
-  } catch (err) {
-    throw new Error(`❌ Error parseando YAML en ${relativePath}: ${err.message}`);
+  // 2) Carpeta raíz del paquete CLI
+  // Este archivo está en: bin/infrastructure/configLoader.js
+  // → raíz del paquete = dos niveles arriba
+  const moduleRoot = path.resolve(__dirname, "..", "..");
+  const fromModule = path.resolve(moduleRoot, relativePath);
+  if (fs.existsSync(fromModule)) {
+    return fromModule;
   }
+
+  return null;
 }
 
 /**
- * Carga TODOS los archivos YAML mapeados en CONFIG_FILES.
- * 
- * Retorna un objeto como:
- * {
- *   modularize: {...} || null,
- *   bundle: {...} || null,
- *   normalize: {...} || null,
- *   linter: {...} || null,
- *   logging: {...} || null,
- * }
+ * Carga un YAML de configuración desde la ruta lógica (relativePath),
+ * usando la resolución descrita en resolveConfigPath.
+ *
+ * @param {string} relativePath  Ruta relativa tipo "config/modularize.yaml"
+ * @returns {any|null}
+ */
+function loadYamlConfig(relativePath) {
+  const filePath = resolveConfigPath(relativePath);
+  if (!filePath) return null;
+
+  const raw = fs.readFileSync(filePath, "utf8");
+  return yaml.load(raw);
+}
+
+/**
+ * Carga todos los archivos de configuración conocidos.
+ *
+ * - Si un archivo no existe ni en el proyecto ni en el paquete,
+ *   se deja en null para que la capa de aplicación decida qué hacer.
  */
 function loadAllConfigs() {
-  const configs = {};
-
-  for (const [key, file] of Object.entries(CONFIG_FILES)) {
-    configs[key] = loadYamlConfig(file);
-  }
-
-  return configs;
+  return {
+    modularize: loadYamlConfig(CONFIG_FILES.modularize),
+    bundle: loadYamlConfig(CONFIG_FILES.bundle),
+    normalize: loadYamlConfig(CONFIG_FILES.normalize),
+    linter: loadYamlConfig(CONFIG_FILES.linter),
+    logging: loadYamlConfig(CONFIG_FILES.logging),
+  };
 }
 
 module.exports = {
