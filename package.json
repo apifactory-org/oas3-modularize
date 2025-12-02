@@ -1,8 +1,11 @@
 {
-  "name": "openapi-builder",
+  "name": "@apifactory/openapi-builder",
   "version": "1.0.0",
   "description": "CLI para trabajar con contratos OpenAPI 3: modularizar, generar bundle, documentación Markdown y convertir a Swagger 2.0.",
   "type": "commonjs",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "openapi-builder": "bin/main.js"
   },
