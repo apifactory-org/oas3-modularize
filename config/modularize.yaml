@@ -2,51 +2,39 @@
 #  Archivo de configuración: ./config/modularize.yaml
 # ===================================================================
 #  OBJETIVO:
-#    Controla cómo se modulariza un OpenAPI monolítico en archivos
-#    separados, incluyendo:
-#      - Qué componentes separar (schemas, responses, etc.)
-#      - Convenciones de nombres para archivos e identificadores
-#      - Normalización de nombres de respuestas HTTP
+#    Configuración GENERAL para modularización de OpenAPI.
+#    Las opciones específicas de estilo (scaffolding) se definen
+#    en config/scaffoldings.yaml
 #
-#  Este archivo es consumido por el comando:
+#  Comandos que usan este archivo:
 #    - oas3-modularize modularize
+#    - oas3-modularize transform
 # ===================================================================
 
 # -------------------------------------------------------------------
 # RUTAS
 # -------------------------------------------------------------------
 paths:
-  # Ruta del archivo OpenAPI monolítico a modularizar.
-  input: "./api/example.yaml"
+  # Ruta del archivo OpenAPI monolítico de entrada
+  input: "./api/openapi.yaml"
 
-  # Carpeta donde se generará la estructura modular:
-  #   - <output>/<mainFileName>.yaml
-  #   - <output>/components/schemas/*.yaml
-  #   - <output>/components/responses/*.yaml
-  #   - <output>/paths/*.yaml
+  # Carpeta donde se generará la estructura modular
   output: "./src"
 
-  # Nombre del archivo principal (entrypoint) sin extensión.
-  # Ejemplos: "openapi", "main", "index", "api-spec"
+  # Nombre del archivo principal (entrypoint) sin extensión
   mainFileName: "main"
 
 # -------------------------------------------------------------------
 # COMPORTAMIENTO GENERAL
 # -------------------------------------------------------------------
 behavior:
-  # Limpia la carpeta de salida antes de generar nuevos archivos.
-  # true  => Elimina TODO en la carpeta de salida (pide confirmación).
-  # false => Mantiene archivos previos (puede causar conflictos).
+  # Limpia la carpeta de salida antes de generar (pide confirmación)
   cleanOutputDir: true
 
-  # Ajusta referencias internas ($ref) después de modularizar.
-  # true  => Recalcula rutas relativas de $ref al separar archivos.
-  # false => Mantiene $ref originales (puede romper referencias).
+  # Ajusta referencias internas ($ref) a rutas relativas
   fixRefs: true
 
-  # Valida el resultado con Redocly después de modularizar.
-  # true  => Ejecuta validación al finalizar.
-  # false => Omite validación (útil para desarrollo rápido).
+  # Valida el resultado con Redocly al finalizar
   validateAfterModularize: true
 
 # -------------------------------------------------------------------
@@ -56,64 +44,37 @@ behavior:
 # Si una opción está en false, esa sección permanece en el entrypoint.
 
 modularization:
-  # Separa cada endpoint en su propio archivo bajo /paths
-  # Ejemplo: /users/{id} → paths/users-id.yaml
   paths: true
-
-  # Separa cada schema en components/schemas/
-  # Ejemplo: User → components/schemas/User.yaml
   schemas: true
-
-  # Separa cada response en components/responses/
   responses: true
-
-  # Separa cada requestBody en components/requestBodies/
   requestBodies: true
-
-  # Separa cada parameter en components/parameters/
   parameters: true
-
-  # Separa cada header en components/headers/
   headers: true
-
-  # Separa cada securityScheme en components/securitySchemes/
   securitySchemes: true
-
-  # Separa cada example en components/examples/
   examples: true
 
-  # Controla qué hacer con componentes no referenciados.
-  # true  => Incluye todos los componentes aunque no se usen.
-  # false => Excluye componentes que no están referenciados en paths.
+  # Incluir componentes no referenciados en paths
   includeUnusedComponents: true
 
 # -------------------------------------------------------------------
-# CONVENCIONES DE NOMBRES
+# CONVENCIONES DE NOMBRES (DEFAULTS)
 # -------------------------------------------------------------------
-# Valores válidos para todas las convenciones:
-#   PascalCase  → UserProfile.yaml
-#   camelCase   → userProfile.yaml
-#   snake_case  → user_profile.yaml
-#   kebab-case  → user-profile.yaml
-#   lowercase   → userprofile.yaml
-#   UPPERCASE   → USERPROFILE.yaml
+# Aplican cuando el scaffolding no especifica algo diferente.
 
 naming:
   # Convención para nombres de archivos de componentes
   components: "PascalCase"
 
   # Convención para nombres de archivos de paths
-  # Ejemplo: /users/{id} con kebab-case → users-id.yaml
   paths: "kebab-case"
 
 # -------------------------------------------------------------------
-# PREFIJOS Y SUFIJOS PARA COMPONENTES
+# PREFIJOS GLOBALES
 # -------------------------------------------------------------------
-affixes:
-  # Habilitar/deshabilitar el sistema de afijos
-  enabled: true
+# Los sufijos se definen por scaffolding en scaffoldings.yaml
 
-  # Prefijos por tipo de componente (vacío = sin prefijo)
+affixes:
+  enabled: true
   prefixes:
     schemas: ""
     responses: ""
@@ -123,102 +84,18 @@ affixes:
     securitySchemes: ""
     examples: ""
 
-  # Sufijos por tipo de componente (vacío = sin sufijo)
-  # Ejemplo: User + "Schema" → UserSchema.yaml
-  suffixes:
-    schemas: "Schema"
-    responses: ""          # Usar responseNaming.ensureResponseSuffix
-    requestBodies: "Request"
-    parameters: "Param"
-    headers: "Header"
-    securitySchemes: "Security"
-    examples: "Example"
-
-# -------------------------------------------------------------------
-# NORMALIZACIÓN DE RESPUESTAS HTTP
-# -------------------------------------------------------------------
-# Normaliza nombres inconsistentes de responses:
-#   "BadRequestResponse400" → "BadRequestResponse"
-#   "TooManyRequests429"    → "TooManyRequestsResponse"
-
-responseNaming:
-  # Habilitar normalización de nombres
-  enabled: true
-
-  # Elimina código HTTP del nombre (ej: "NotFound404" → "NotFound")
-  removeStatusCode: true
-
-  # Asegura sufijo "Response" (ej: "NotFound" → "NotFoundResponse")
-  ensureResponseSuffix: true
-
-  # Agrega código al final (ej: "NotFoundResponse" → "NotFoundResponse404")
-  # Útil cuando hay múltiples variantes del mismo código.
-  appendStatusCode: false
-
-  # Usa nombres semánticos según statusNames
-  useSemanticNames: true
-
-  # Mapeo de códigos HTTP a nombres semánticos
-  statusNames:
-    # 2xx - Success
-    200: "Ok"
-    201: "Created"
-    202: "Accepted"
-    204: "NoContent"
-    # 4xx - Client Error
-    400: "BadRequest"
-    401: "Unauthorized"
-    403: "Forbidden"
-    404: "NotFound"
-    405: "MethodNotAllowed"
-    409: "Conflict"
-    422: "UnprocessableEntity"
-    429: "TooManyRequests"
-    # 5xx - Server Error
-    500: "InternalServerError"
-    501: "NotImplemented"
-    502: "BadGateway"
-    503: "ServiceUnavailable"
-    504: "GatewayTimeout"
-    # Default
-    default: "UnexpectedError"
-
-  # Descripciones genéricas por código (para responses sin descripción)
-  genericDescriptions:
-    200: "Successful operation"
-    201: "Resource created successfully"
-    204: "No content"
-    400: "Bad request"
-    401: "Unauthorized"
-    403: "Forbidden"
-    404: "Resource not found"
-    409: "Conflict"
-    422: "Unprocessable entity"
-    429: "Too many requests"
-    500: "Internal server error"
-    default: "Unexpected error"
-
-  # Códigos o rangos donde se preserva el nombre original del OpenAPI.
-  # Útil para responses 2xx con nombres de negocio ("BankResponse").
-  # Valores: "200", "2xx", "4xx", "5xx"
-  preserveCustomNames:
-    - "2xx"
-
 # -------------------------------------------------------------------
 # OPCIONES AVANZADAS
 # -------------------------------------------------------------------
 advanced:
-  # Extensión de archivos generados: ".yaml", ".yml", ".json"
+  # Extensión de archivos: ".yaml", ".yml", ".json"
   fileExtension: ".yaml"
 
-  # Prefijo para todos los archivos (útil para monorepos multi-API)
-  # Ejemplo: "payments-" → "payments-users.yaml"
-  # Dejar vacío para no usar prefijo.
+  # Prefijo para todos los archivos (útil para monorepos)
   filenamePrefix: ""
 
   # Indentación YAML (2 o 4 espacios)
   indent: 2
 
   # Elimina carpetas vacías después de modularizar
-  # (ej: si no hay headers, elimina components/headers/)
-  removeEmptyFolders: false
+  removeEmptyFolders: true

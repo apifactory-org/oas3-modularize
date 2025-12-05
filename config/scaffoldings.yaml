@@ -1,0 +1,355 @@
+# ===================================================================
+#  Archivo de configuración: ./config/scaffoldings.yaml
+# ===================================================================
+#  OBJETIVO:
+#    Define los perfiles de scaffolding disponibles para modularizar
+#    OpenAPI según diferentes estilos de API.
+#
+#  Cada scaffolding define:
+#    - schemaClassification: Si clasificar schemas en subcarpetas
+#    - folders: Estructura de carpetas
+#    - suffixes: Sufijos por tipo de componente
+#    - responseNaming: Cómo nombrar responses
+#    - requestNaming: Cómo nombrar requestBodies
+#    - detection: Reglas para auto-detectar este estilo
+#
+#  ESTILOS DISPONIBLES:
+#    1. standard   - Sin transformaciones, preserva nombres originales
+#    2. restful    - REST orientado a recursos (CRUD)
+#    3. rpc        - RPC sobre HTTP orientado a acciones
+#    4. google     - Google HTTP API con custom methods (:action)
+#    5. bian       - BIAN Service Domain API para banca
+# ===================================================================
+
+# -------------------------------------------------------------------
+# 1. STANDARD
+# -------------------------------------------------------------------
+standard:
+  description: "Preserves original names and structure"
+  
+  schemaClassification: false
+  
+  folders:
+    schemas: "schemas"
+    responses: "responses"
+    requestBodies: "requestBodies"
+    parameters: "parameters"
+    headers: "headers"
+    securitySchemes: "securitySchemes"
+    examples: "examples"
+  
+  suffixes:
+    schemas: ""
+    responses: ""
+    requestBodies: ""
+    parameters: ""
+    headers: ""
+    securitySchemes: ""
+    examples: ""
+  
+  responseNaming:
+    enabled: false
+  
+  requestNaming:
+    enabled: false
+  
+  detection:
+    enabled: false
+
+# -------------------------------------------------------------------
+# 2. RESTFUL
+# -------------------------------------------------------------------
+restful:
+  description: "REST orientado a recursos"
+  
+  schemaClassification: true
+  
+  folders:
+    objects: "schemas"
+    enums: "enums"
+    properties: "properties"
+    arrays: "arrays"
+    composites: "composites"
+    responses: "responses"
+    requestBodies: "requestBodies"
+    parameters: "parameters"
+    headers: "headers"
+    securitySchemes: "securitySchemes"
+    examples: "examples"
+  
+  suffixes:
+    objects: "Schema"
+    enums: "Enum"
+    properties: "Prop"
+    arrays: "Array"
+    composites: "Schema"
+    responses: "Response"
+    requestBodies: "Request"
+    parameters: "Param"
+    headers: "Header"
+    securitySchemes: "Security"
+    examples: "Example"
+  
+  responseNaming:
+    enabled: true
+    pattern: "{Verb}{Resource}Response"
+    verbs:
+      get: "Retrieve"
+      post: "Create"
+      put: "Update"
+      patch: "Patch"
+      delete: "Delete"
+    dedupeErrors: true
+    statusNames:
+      200: "Ok"
+      201: "Created"
+      202: "Accepted"
+      204: "NoContent"
+      400: "BadRequest"
+      401: "Unauthorized"
+      403: "Forbidden"
+      404: "NotFound"
+      405: "MethodNotAllowed"
+      409: "Conflict"
+      422: "UnprocessableEntity"
+      429: "TooManyRequests"
+      500: "InternalServerError"
+      502: "BadGateway"
+      503: "ServiceUnavailable"
+      504: "GatewayTimeout"
+      default: "UnexpectedError"
+  
+  requestNaming:
+    enabled: true
+    pattern: "{Verb}{Resource}Request"
+    suffix: "Request"
+  
+  detection:
+    enabled: true
+    pluralResources:
+      minRatio: 0.6
+    verbsInPath:
+      maxRatio: 0.1
+      verbPrefixes: ["get", "create", "update", "delete", "search"]
+
+# -------------------------------------------------------------------
+# 3. RPC
+# -------------------------------------------------------------------
+rpc:
+  description: "RPC sobre HTTP orientado a acciones"
+  
+  schemaClassification: true
+  
+  folders:
+    objects: "schemas"
+    enums: "enums"
+    properties: "schemas"
+    arrays: "schemas"
+    composites: "schemas"
+    responses: "responses"
+    requestBodies: "requestBodies"
+    parameters: "parameters"
+    headers: "headers"
+    securitySchemes: "securitySchemes"
+    examples: "examples"
+  
+  suffixes:
+    objects: "Schema"
+    enums: "Enum"
+    properties: "Schema"
+    arrays: "Schema"
+    composites: "Schema"
+    responses: "Response"
+    requestBodies: "Request"
+    parameters: "Param"
+    headers: "Header"
+    securitySchemes: "Security"
+    examples: "Example"
+  
+  responseNaming:
+    enabled: true
+    pattern: "{Action}{Resource}Response"
+    dedupeErrors: true
+    statusNames:
+      200: "Ok"
+      201: "Created"
+      204: "NoContent"
+      400: "BadRequest"
+      401: "Unauthorized"
+      403: "Forbidden"
+      404: "NotFound"
+      409: "Conflict"
+      422: "UnprocessableEntity"
+      500: "InternalServerError"
+      default: "UnexpectedError"
+  
+  requestNaming:
+    enabled: true
+    pattern: "{Action}{Resource}Request"
+    suffix: "Request"
+  
+  detection:
+    enabled: true
+    verbsAtEnd:
+      minRatio: 0.4
+      values:
+        - notify
+        - approve
+        - reject
+        - activate
+        - deactivate
+        - transfer
+        - promote
+        - calculate
+        - search
+        - generate
+        - archive
+        - validate
+        - confirm
+        - cancel
+        - submit
+        - process
+
+# -------------------------------------------------------------------
+# 4. GOOGLE HTTP API
+# -------------------------------------------------------------------
+google:
+  description: "Google HTTP API con custom methods (:action)"
+  
+  schemaClassification: true
+  
+  folders:
+    objects: "schemas"
+    enums: "enums"
+    properties: "properties"
+    arrays: "arrays"
+    composites: "schemas"
+    responses: "responses"
+    requestBodies: "requestBodies"
+    parameters: "parameters"
+    headers: "headers"
+    securitySchemes: "securitySchemes"
+    examples: "examples"
+  
+  suffixes:
+    objects: "Schema"
+    enums: "Enum"
+    properties: "Prop"
+    arrays: "Array"
+    composites: "Schema"
+    responses: "Response"
+    requestBodies: "Request"
+    parameters: "Param"
+    headers: "Header"
+    securitySchemes: "Security"
+    examples: "Example"
+  
+  responseNaming:
+    enabled: true
+    pattern: "{Action}{Resource}Response"
+    dedupeErrors: true
+    statusNames:
+      200: "Ok"
+      201: "Created"
+      204: "NoContent"
+      400: "BadRequest"
+      401: "Unauthorized"
+      403: "Forbidden"
+      404: "NotFound"
+      409: "Conflict"
+      422: "UnprocessableEntity"
+      429: "TooManyRequests"
+      500: "InternalServerError"
+      default: "UnexpectedError"
+  
+  requestNaming:
+    enabled: true
+    pattern: "{Action}{Resource}Request"
+    suffix: "Request"
+  
+  detection:
+    enabled: true
+    customMethods:
+      pattern: ":\\w+"
+      minRatio: 0.2
+    pluralResources:
+      minRatio: 0.3
+
+# -------------------------------------------------------------------
+# 5. BIAN
+# -------------------------------------------------------------------
+bian:
+  description: "BIAN Service Domain API para banca"
+  
+  schemaClassification: true
+  
+  folders:
+    objects: "schemas"
+    enums: "enums"
+    properties: "schemas"
+    arrays: "schemas"
+    composites: "schemas"
+    responses: "responses"
+    requestBodies: "requestBodies"
+    parameters: "parameters"
+    headers: "headers"
+    securitySchemes: "securitySchemes"
+    examples: "examples"
+  
+  suffixes:
+    objects: "Schema"
+    enums: "Enum"
+    properties: "Schema"
+    arrays: "Schema"
+    composites: "Schema"
+    responses: "Response"
+    requestBodies: "Request"
+    parameters: "Param"
+    headers: "Header"
+    securitySchemes: "Security"
+    examples: "Example"
+  
+  responseNaming:
+    enabled: true
+    pattern: "{Action}{Entity}Response"
+    dedupeErrors: true
+    statusNames:
+      200: "Ok"
+      201: "Created"
+      204: "NoContent"
+      400: "BadRequest"
+      401: "Unauthorized"
+      403: "Forbidden"
+      404: "NotFound"
+      409: "Conflict"
+      422: "UnprocessableEntity"
+      500: "InternalServerError"
+      default: "UnexpectedError"
+  
+  requestNaming:
+    enabled: true
+    pattern: "{Action}{Entity}Request"
+    suffix: "Request"
+  
+  detection:
+    enabled: true
+    verbsAtEnd:
+      minRatio: 0.5
+      values:
+        - Initiate
+        - Register
+        - Create
+        - Evaluate
+        - Provide
+        - Update
+        - Control
+        - Exchange
+        - Execute
+        - Request
+        - Retrieve
+        - Notify
+        - Capture
+    operationIdPatterns:
+      - "^(initiate|register|create|evaluate|retrieve|update|execute|exchange)"
+      - "(ControlRecord|BehaviorQualifier)"
+    operationIdPatternsMinRatio: 0.2

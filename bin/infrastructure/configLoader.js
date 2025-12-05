@@ -8,10 +8,11 @@ const yaml = require("js-yaml");
 const CONFIG_FILES = {
   modularize: "config/modularize.yaml",
   bundle: "config/bundle.yaml",
-  swagger2: "config/swagger2.yaml",          // <-- 🔥 NUEVO
+  swagger2: "config/swagger2.yaml",
   normalize: "config/normalize.yaml",
   linter: "config/linter.yaml",
   logging: "config/logging.yaml",
+  scaffoldings: "config/scaffoldings.yaml", // 👈 NUEVO: definición de estilos / scaffoldings
 };
 
 /**
@@ -21,7 +22,7 @@ const CONFIG_FILES = {
  *    ./config/xxx.yaml
  *
  * 2) Si no existe, busca dentro del propio paquete CLI:
- *    <node_modules>/@apifactory/oas3-modularize/config/xxx.yaml
+ *    <raíz-del-paquete>/config/xxx.yaml
  *
  * 3) Si tampoco existe, devuelve null.
  */
@@ -67,10 +68,11 @@ function loadAllConfigs() {
   return {
     modularize: loadYamlConfig(CONFIG_FILES.modularize),
     bundle: loadYamlConfig(CONFIG_FILES.bundle),
-    swagger2: loadYamlConfig(CONFIG_FILES.swagger2),   // <-- 🔥 NUEVO
+    swagger2: loadYamlConfig(CONFIG_FILES.swagger2),
     normalize: loadYamlConfig(CONFIG_FILES.normalize),
     linter: loadYamlConfig(CONFIG_FILES.linter),
     logging: loadYamlConfig(CONFIG_FILES.logging),
+    scaffoldings: loadYamlConfig(CONFIG_FILES.scaffoldings), // 👈 NUEVO: estilos / scaffoldings
   };
 }
 

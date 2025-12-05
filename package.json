@@ -9,6 +9,9 @@
   "bin": {
     "openapi-builder": "bin/main.js"
   },
+  "engines": {
+    "node": ">=18 <23"
+  },
   "scripts": {
     "modularize": "node bin/main.js modularize",
     "bundle": "node bin/main.js bundle",

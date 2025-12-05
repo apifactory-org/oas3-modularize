@@ -67,9 +67,11 @@ function applyNamingConvention(name, convention = 'PascalCase') {
 }
 
 /**
- * Aplica prefijos y sufijos a un nombre
+ * Aplica prefijos y sufijos a un nombre de forma idempotente:
+ * - No repite el prefijo si ya empieza con él
+ * - No repite el sufijo si ya termina con él
  * @param {string} name - Nombre con convención ya aplicada
- * @param {string} prefix - Prefijo (ej: "Schema", "Request")
+ * @param {string} prefix - Prefijo (ej: "CR", "Party")
  * @param {string} suffix - Sufijo (ej: "Schema", "Request")
  * @returns {string}
  */
@@ -79,11 +81,17 @@ function applyAffixes(name, prefix = '', suffix = '') {
   let result = name;
 
   if (prefix && typeof prefix === 'string' && prefix.length > 0) {
-    result = prefix + result;
+    // Evitar duplicar prefijo (idempotente)
+    if (!result.startsWith(prefix)) {
+      result = prefix + result;
+    }
   }
 
   if (suffix && typeof suffix === 'string' && suffix.length > 0) {
-    result = result + suffix;
+    // Evitar duplicar sufijo (idempotente)
+    if (!result.endsWith(suffix)) {
+      result = result + suffix;
+    }
   }
 
   return result;
@@ -113,7 +121,7 @@ function applyFullNaming(name, convention = 'PascalCase', prefix = '', suffix = 
   // 1. Aplicar convención de nombres
   let result = applyNamingConvention(name, convention);
 
-  // 2. Aplicar prefijo y sufijo
+  // 2. Aplicar prefijo y sufijo (idempotentes)
   result = applyAffixes(result, prefix, suffix);
 
   return result;
@@ -138,7 +146,7 @@ function sanitizeComponentName(name) {
  * Genera el nombre FINAL de archivo para componentes:
  *   - Sanitiza el nombre original
  *   - Aplica naming.components (convención)
- *   - Aplica prefijos/sufijos de affixes
+ *   - Aplica prefijos/sufijos de affixes (idempotentes)
  *   - Respeta reglas especiales (responses NO se transforman aquí)
  *
  * @param {string} name           Nombre lógico del componente (clave en components.X)
@@ -163,7 +171,7 @@ function generateComponentFilename(name, type, namingConfig = {}, affixesConfig 
   const convention = namingConfig.components || 'PascalCase';
   let fileName = applyNamingConvention(cleanBase, convention);
 
-  // 3. Aplicar prefijos y sufijos si están habilitados
+  // 3. Aplicar prefijos y sufijos si están habilitados (idempotentes)
   if (affixesConfig && affixesConfig.enabled) {
     const prefix = (affixesConfig.prefixes && affixesConfig.prefixes[type]) || '';
     const suffix = (affixesConfig.suffixes && affixesConfig.suffixes[type]) || '';
