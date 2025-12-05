@@ -2,10 +2,11 @@
 #  Archivo de configuración: ./config/modularize.yaml
 # ===================================================================
 #  OBJETIVO:
-#    Controla EXCLUSIVAMENTE cómo se modulariza el OAS3 en archivos.
-#    NO modifica contenido, NO ordena propiedades, NO normaliza nada
-#    (excepto los nombres de respuestas HTTP si responseNaming.enabled: true).
-#    Solo define la estructura física del proyecto (src/paths, src/components, etc.).
+#    Controla cómo se modulariza un OpenAPI monolítico en archivos
+#    separados, incluyendo:
+#      - Qué componentes separar (schemas, responses, etc.)
+#      - Convenciones de nombres para archivos e identificadores
+#      - Normalización de nombres de respuestas HTTP
 #
 #  Este archivo es consumido por el comando:
 #    - oas3-modularize modularize
@@ -15,108 +16,93 @@
 # RUTAS
 # -------------------------------------------------------------------
 paths:
-  # Ruta del archivo OpenAPI principal MONOLÍTICO a modularizar.
-  # Es el contrato "grande", normalmente en /api.
+  # Ruta del archivo OpenAPI monolítico a modularizar.
   input: "./api/example.yaml"
 
   # Carpeta donde se generará la estructura modular:
-  #   - <modularizedOutput>/main.yaml (o el nombre configurado)
-  #   - <modularizedOutput>/components/schemas/*.yaml
-  #   - <modularizedOutput>/components/requestBodies/*.yaml
-  #   - <modularizedOutput>/paths/*.yaml
-  modularizedOutput: "./src"
+  #   - <output>/<mainFileName>.yaml
+  #   - <output>/components/schemas/*.yaml
+  #   - <output>/components/responses/*.yaml
+  #   - <output>/paths/*.yaml
+  output: "./src"
 
   # Nombre del archivo principal (entrypoint) sin extensión.
-  # Se generará como: <modularizedOutput>/<mainFileName><fileExtension>
-  # Ejemplos:
-  #   openapi      → openapi.yaml
-  #   index        → index.yaml
-  #   api-spec     → api-spec.yaml
-  #   main         → main.yaml
+  # Ejemplos: "openapi", "main", "index", "api-spec"
   mainFileName: "main"
 
-  # Carpeta donde se generará documentación adicional (Markdown, etc.)
-  # La usa el comando de docs, no el de modularización.
-  docsOutput: "./docs"
-
 # -------------------------------------------------------------------
-# COMPORTAMIENTO GENERAL (MODULARIZACIÓN)
+# COMPORTAMIENTO GENERAL
 # -------------------------------------------------------------------
 behavior:
-  # Limpia la carpeta modularizada antes de generar nuevos archivos.
-  # true  => elimina TODO lo que haya en ./src antes de modularizar (pide confirmación).
-  # false => deja archivos previos (no recomendado en la mayoría de casos).
-  cleanModularizedOutput: true
+  # Limpia la carpeta de salida antes de generar nuevos archivos.
+  # true  => Elimina TODO en la carpeta de salida (pide confirmación).
+  # false => Mantiene archivos previos (puede causar conflictos).
+  cleanOutputDir: true
 
   # Ajusta referencias internas ($ref) después de modularizar.
-  # true  => aplica fixRefs para recalcular rutas de $ref cuando se separan archivos.
-  # false => NO toca los $ref; solo separa físicamente los archivos.
+  # true  => Recalcula rutas relativas de $ref al separar archivos.
+  # false => Mantiene $ref originales (puede romper referencias).
   fixRefs: true
 
-  # Genera (o no) un archivo "index.yaml" en cada carpeta modular.
-  # Este índice podría listar y re-exportar las piezas del módulo
-  # (por ejemplo, index.yaml en components/ que reúna subarchivos).
-  # Actualmente tu lógica puede no usarlo aún, pero se mantiene la opción.
-  createIndexFiles: false
+  # Valida el resultado con Redocly después de modularizar.
+  # true  => Ejecuta validación al finalizar.
+  # false => Omite validación (útil para desarrollo rápido).
+  validateAfterModularize: true
 
 # -------------------------------------------------------------------
-# OPCIONES DE MODULARIZACIÓN
+# QUÉ MODULARIZAR
 # -------------------------------------------------------------------
+# Controla qué secciones se separan en archivos individuales.
+# Si una opción está en false, esa sección permanece en el entrypoint.
+
 modularization:
-  # Divide cada endpoint en su propio archivo bajo /paths
-  splitPaths: true
+  # Separa cada endpoint en su propio archivo bajo /paths
+  # Ejemplo: /users/{id} → paths/users-id.yaml
+  paths: true
 
-  # Divide cada esquema dentro de components.schemas en archivos individuales
-  # Estructura: components/schemas/<SchemaName>.yaml
-  splitSchemas: true
+  # Separa cada schema en components/schemas/
+  # Ejemplo: User → components/schemas/User.yaml
+  schemas: true
 
-  # Divide parámetros de components.parameters en archivos separados
-  # Estructura: components/parameters/<ParameterName>.yaml
-  splitParameters: true
+  # Separa cada response en components/responses/
+  responses: true
 
-  # Divide respuestas en components.responses
-  # Estructura: components/responses/<ResponseName>.yaml
-  splitResponses: true
+  # Separa cada requestBody en components/requestBodies/
+  requestBodies: true
 
-  # Divide requestBodies en components.requestBodies
-  # Estructura: components/requestBodies/<RequestBodyName>.yaml
-  splitRequestBodies: true
+  # Separa cada parameter en components/parameters/
+  parameters: true
 
-  # Divide headers en components.headers
-  # Estructura: components/headers/<HeaderName>.yaml
-  splitHeaders: true
+  # Separa cada header en components/headers/
+  headers: true
 
-  # Divide securitySchemes en components.securitySchemes
-  # Estructura: components/securitySchemes/<SecuritySchemeName>.yaml
-  splitSecuritySchemes: true
+  # Separa cada securityScheme en components/securitySchemes/
+  securitySchemes: true
 
-  # Si un schema o response no está siendo referenciado, decidir si debe exportarse igual:
-  #   true  => incluye todo, aunque no se use.
-  #   false => exporta solo lo referenciado (más limpio, pero más agresivo).
+  # Separa cada example en components/examples/
+  examples: true
+
+  # Controla qué hacer con componentes no referenciados.
+  # true  => Incluye todos los componentes aunque no se usen.
+  # false => Excluye componentes que no están referenciados en paths.
   includeUnusedComponents: true
 
 # -------------------------------------------------------------------
 # CONVENCIONES DE NOMBRES
 # -------------------------------------------------------------------
+# Valores válidos para todas las convenciones:
+#   PascalCase  → UserProfile.yaml
+#   camelCase   → userProfile.yaml
+#   snake_case  → user_profile.yaml
+#   kebab-case  → user-profile.yaml
+#   lowercase   → userprofile.yaml
+#   UPPERCASE   → USERPROFILE.yaml
+
 naming:
   # Convención para nombres de archivos de componentes
-  # Valores válidos:
-  #   PascalCase  → UserProfile.yaml
-  #   camelCase   → userProfile.yaml
-  #   snake_case  → user_profile.yaml
-  #   kebab-case  → user-profile.yaml
-  #   lowercase   → userprofile.yaml
-  #   UPPERCASE   → USER_PROFILE.yaml
   components: "PascalCase"
 
-  # Convención para los identificadores de componentes en las referencias
-  # (El nombre usado en #/components/schemas/XXX)
-  # Nota: NO afecta el nombre del archivo, solo el identificador en las referencias
-  # Valores válidos: PascalCase, camelCase, snake_case, kebab-case, lowercase, UPPERCASE
-  componentIdentifiers: "PascalCase"
-
   # Convención para nombres de archivos de paths
-  # Valores válidos: PascalCase, camelCase, snake_case, kebab-case, lowercase, UPPERCASE
   # Ejemplo: /users/{id} con kebab-case → users-id.yaml
   paths: "kebab-case"
 
@@ -124,233 +110,115 @@ naming:
 # PREFIJOS Y SUFIJOS PARA COMPONENTES
 # -------------------------------------------------------------------
 affixes:
-  # Habilitar/deshabilitar el sistema de prefijos y sufijos
+  # Habilitar/deshabilitar el sistema de afijos
   enabled: true
 
-  # Prefijos para cada tipo de componente
-  # Formato: <tipo>: "prefijo"
-  # Dejar vacío ("") para no aplicar prefijo
-  # 
-  # Ejemplos:
-  #   "" → User.yaml
-  #   "Schema" → SchemaUser.yaml
-  #   "schema_" → schema_User.yaml
+  # Prefijos por tipo de componente (vacío = sin prefijo)
   prefixes:
     schemas: ""
-    requestBodies: ""
     responses: ""
+    requestBodies: ""
     parameters: ""
-    examples: ""
     headers: ""
     securitySchemes: ""
+    examples: ""
 
-  # Sufijos para cada tipo de componente
-  # Formato: <tipo>: "sufijo"
-  # Dejar vacío ("") para no aplicar sufijo
-  #
-  # Ejemplos:
-  #   "" → Pet.yaml
-  #   "Schema" → PetSchema.yaml
-  #   "_schema" → Pet_schema.yaml
-  #
-  # NOTA: Para responses, se recomienda dejar vacío ("") y usar
-  #       responseNaming.ensureResponseSuffix en su lugar para
-  #       mayor control sobre el formato de nombres.
+  # Sufijos por tipo de componente (vacío = sin sufijo)
+  # Ejemplo: User + "Schema" → UserSchema.yaml
   suffixes:
     schemas: "Schema"
+    responses: ""          # Usar responseNaming.ensureResponseSuffix
     requestBodies: "Request"
-    responses: ""
     parameters: "Param"
-    examples: "Example"
     headers: "Header"
     securitySchemes: "Security"
+    examples: "Example"
 
 # -------------------------------------------------------------------
-# NORMALIZACIÓN DE NOMBRES DE RESPUESTAS HTTP
+# NORMALIZACIÓN DE RESPUESTAS HTTP
 # -------------------------------------------------------------------
-# Esta sección permite customizar cómo se nombran las respuestas HTTP
-# cuando se extraen de paths (inline) o se procesan desde components/responses.
-#
-# PROBLEMA QUE RESUELVE:
-#   Los OpenAPI suelen tener nombres inconsistentes para respuestas HTTP:
-#     - "BadRequestResponse400" (con código al final)
-#     - "TooManyRequests429" (sin sufijo "Response")
-#     - "NotFound" (sin código ni sufijo)
-#     - "InternalServerErrorResponse500" (redundante)
-#
-# SOLUCIÓN:
-#   Esta configuración normaliza todos los nombres a un formato consistente.
-#
-# EJEMPLO DE TRANSFORMACIÓN (con configuración por defecto):
-#   ANTES                              DESPUÉS
-#   ──────────────────────────────     ────────────────────────────
-#   BadRequestResponse400         →    BadRequestResponse
-#   TooManyRequests429            →    TooManyRequestsResponse
-#   NotFoundResponse404           →    NotFoundResponse
-#   InternalServerErrorResponse500 →   InternalServerErrorResponse
-#   BankResponse (2xx)            →    BankResponse (preservado)
-#
+# Normaliza nombres inconsistentes de responses:
+#   "BadRequestResponse400" → "BadRequestResponse"
+#   "TooManyRequests429"    → "TooManyRequestsResponse"
+
 responseNaming:
-  # ─────────────────────────────────────────────────────────────────
-  # HABILITAR NORMALIZACIÓN
-  # ─────────────────────────────────────────────────────────────────
-  # true  => Aplica todas las reglas de normalización configuradas abajo.
-  # false => Usa los nombres exactos del OpenAPI original sin modificar.
+  # Habilitar normalización de nombres
   enabled: true
 
-  # ─────────────────────────────────────────────────────────────────
-  # REMOVER CÓDIGO HTTP DEL NOMBRE
-  # ─────────────────────────────────────────────────────────────────
-  # Elimina el código de estado HTTP (3 dígitos) del nombre original.
-  #
-  # true  => "BadRequestResponse400" → "BadRequestResponse"
-  #          "TooManyRequests429"    → "TooManyRequests"
-  #          "NotFound404"           → "NotFound"
-  # false => Mantiene el código si existe en el nombre original.
-  removeStatusCodeFromName: true
+  # Elimina código HTTP del nombre (ej: "NotFound404" → "NotFound")
+  removeStatusCode: true
 
-  # ─────────────────────────────────────────────────────────────────
-  # ASEGURAR SUFIJO "Response"
-  # ─────────────────────────────────────────────────────────────────
-  # Garantiza que todos los nombres terminen con "Response".
-  #
-  # true  => "TooManyRequests"    → "TooManyRequestsResponse"
-  #          "NotFound"           → "NotFoundResponse"
-  #          "BadRequestResponse" → "BadRequestResponse" (ya lo tiene)
-  # false => No agrega sufijo, mantiene el nombre tal cual.
+  # Asegura sufijo "Response" (ej: "NotFound" → "NotFoundResponse")
   ensureResponseSuffix: true
 
-  # ─────────────────────────────────────────────────────────────────
-  # INCLUIR CÓDIGO HTTP EN NOMBRE FINAL
-  # ─────────────────────────────────────────────────────────────────
-  # Agrega el código HTTP al final del nombre (después de "Response").
-  # Útil cuando tienes múltiples variantes del mismo código HTTP.
-  #
-  # true  => "BadRequestResponse"  → "BadRequestResponse400"
-  #          "NotFoundResponse"    → "NotFoundResponse404"
-  # false => No agrega código al nombre final.
-  #
-  # NOTA: Si removeStatusCodeFromName: true e includeStatusCodeInName: true,
-  #       primero se remueve el código original y luego se agrega al final.
-  #       Esto permite normalizar posiciones inconsistentes del código.
-  includeStatusCodeInName: false
+  # Agrega código al final (ej: "NotFoundResponse" → "NotFoundResponse404")
+  # Útil cuando hay múltiples variantes del mismo código.
+  appendStatusCode: false
 
-  # ─────────────────────────────────────────────────────────────────
-  # USAR NOMBRES SEMÁNTICOS
-  # ─────────────────────────────────────────────────────────────────
-  # Genera nombres basados en el mapeo statusNames según el código HTTP.
-  #
-  # true  => Código 400 → "BadRequest" (del mapeo statusNames)
-  #          Código 429 → "TooManyRequests" (del mapeo statusNames)
-  # false => Intenta preservar el nombre original (aplicando normalización).
-  #
-  # RECOMENDACIÓN: Usar true para obtener nombres consistentes y predecibles.
+  # Usa nombres semánticos según statusNames
   useSemanticNames: true
 
-  # ─────────────────────────────────────────────────────────────────
-  # MAPEO DE CÓDIGOS HTTP A NOMBRES SEMÁNTICOS
-  # ─────────────────────────────────────────────────────────────────
-  # Define el nombre base para cada código de estado HTTP.
-  # Solo se usa cuando useSemanticNames: true.
-  #
-  # PERSONALIZACIÓN:
-  #   Puedes agregar, modificar o eliminar entradas según tus necesidades.
-  #   El nombre final será: <statusName> + "Response" (si ensureResponseSuffix: true)
-  #
-  # EJEMPLO:
-  #   400: "BadRequest"  →  archivo: BadRequestResponse.yaml
-  #   404: "NotFound"    →  archivo: NotFoundResponse.yaml
-  #
+  # Mapeo de códigos HTTP a nombres semánticos
   statusNames:
-    # ─── 2xx - Success ───
+    # 2xx - Success
     200: "Ok"
     201: "Created"
     202: "Accepted"
     204: "NoContent"
-    
-    # ─── 4xx - Client Error ───
+    # 4xx - Client Error
     400: "BadRequest"
     401: "Unauthorized"
     403: "Forbidden"
     404: "NotFound"
     405: "MethodNotAllowed"
-    406: "NotAcceptable"
     409: "Conflict"
-    410: "Gone"
-    415: "UnsupportedMediaType"
     422: "UnprocessableEntity"
     429: "TooManyRequests"
-    
-    # ─── 5xx - Server Error ───
+    # 5xx - Server Error
     500: "InternalServerError"
     501: "NotImplemented"
     502: "BadGateway"
     503: "ServiceUnavailable"
     504: "GatewayTimeout"
-    505: "HttpVersionNotSupported"
-    
-    # ─── Respuesta por defecto ───
-    # Se usa para el código "default" en OpenAPI o códigos no mapeados.
+    # Default
     default: "UnexpectedError"
 
-  # ─────────────────────────────────────────────────────────────────
-  # PRESERVAR NOMBRES CUSTOM
-  # ─────────────────────────────────────────────────────────────────
-  # Lista de códigos HTTP o rangos donde se PRESERVA el nombre original
-  # definido en el OpenAPI, en lugar de usar el mapeo statusNames.
-  #
-  # CASO DE USO:
-  #   Las respuestas 2xx (éxito) suelen tener nombres de negocio significativos:
-  #     - "BankResponse" (lista de bancos)
-  #     - "UserProfileResponse" (perfil de usuario)
-  #     - "OrderCreatedResponse" (orden creada)
-  #   
-  #   Estos nombres NO deben ser reemplazados por "OkResponse" genérico.
-  #
-  # VALORES VÁLIDOS:
-  #   - Código específico: "200", "201", "404"
-  #   - Rango por centena: "2xx", "4xx", "5xx"
-  #
-  # EJEMPLOS:
-  #   preserveCustomNames:
-  #     - "2xx"          # Preserva TODOS los nombres de respuestas 2xx
-  #     - "200"          # Preserva solo nombres de respuestas 200
-  #     - "201"          # Preserva solo nombres de respuestas 201
-  #
-  # COMPORTAMIENTO CON RANGOS:
-  #   - "2xx" → Preserva nombres para códigos 200-299
-  #   - "4xx" → Preserva nombres para códigos 400-499
-  #   - "5xx" → Preserva nombres para códigos 500-599
-  #
-  # NOTA: Aunque se preserve el nombre, aún se aplican:
-  #   - removeStatusCodeFromName (si está habilitado)
-  #   - ensureResponseSuffix (si está habilitado)
-  #
+  # Descripciones genéricas por código (para responses sin descripción)
+  genericDescriptions:
+    200: "Successful operation"
+    201: "Resource created successfully"
+    204: "No content"
+    400: "Bad request"
+    401: "Unauthorized"
+    403: "Forbidden"
+    404: "Resource not found"
+    409: "Conflict"
+    422: "Unprocessable entity"
+    429: "Too many requests"
+    500: "Internal server error"
+    default: "Unexpected error"
+
+  # Códigos o rangos donde se preserva el nombre original del OpenAPI.
+  # Útil para responses 2xx con nombres de negocio ("BankResponse").
+  # Valores: "200", "2xx", "4xx", "5xx"
   preserveCustomNames:
-    - "2xx"  # Recomendado: preservar nombres de negocio para respuestas exitosas
+    - "2xx"
 
 # -------------------------------------------------------------------
-# OPCIONES AVANZADAS (ESTRUCTURA FÍSICA)
+# OPCIONES AVANZADAS
 # -------------------------------------------------------------------
 advanced:
-  # Convierte rutas en nombres de archivo válidos
-  # Ej: "/users/{id}" → "users-id.yaml"
-  slugifyPaths: true
-
-  # Prefijo opcional para nombres de archivo generados (útil para proyectos multi API)
-  # Ej: "payments-" produciría "payments-users.yaml", etc.
-  # Dejar vacío ("") para no aplicar prefijo
-  filenamePrefix: ""
-
-  # Extensión con la que se generan los archivos modularizados:
-  #   .yaml → openapi.yaml, User.yaml, pet.yaml
-  #   .yml  → openapi.yml, User.yml, pet.yml
-  #   .json → openapi.json, User.json, pet.json (menos recomendado)
+  # Extensión de archivos generados: ".yaml", ".yml", ".json"
   fileExtension: ".yaml"
 
-  # Si alguna sección está vacía (por ejemplo, no hay headers), eliminar su carpeta.
-  removeEmptyFolders: true
+  # Prefijo para todos los archivos (útil para monorepos multi-API)
+  # Ejemplo: "payments-" → "payments-users.yaml"
+  # Dejar vacío para no usar prefijo.
+  filenamePrefix: ""
 
-  # Forzar estilo consistente en archivos generados (indentación YAML).
-  # Valores válidos: 2, 4
+  # Indentación YAML (2 o 4 espacios)
   indent: 2
+
+  # Elimina carpetas vacías después de modularizar
+  # (ej: si no hay headers, elimina components/headers/)
+  removeEmptyFolders: false
